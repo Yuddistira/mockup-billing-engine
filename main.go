@@ -4,18 +4,28 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+
+	"github.com/mockup-billing-engine/repo"
+	"github.com/mockup-billing-engine/usecase"
 )
 
 var templates = template.Must(template.ParseGlob("templates/*.html"))
 
 func main() {
-	fs := http.FileServer(http.Dir("static"))
-	http.Handle("/static/", http.StripPrefix("/static/", fs))
+
+	//init DB
+	dbClient := repo.Init()
+	defer dbClient.CloseDB()
+	//init Usecase
+	uc := usecase.Init(dbClient)
+
+	// fs := http.FileServer(http.Dir("static"))
+	// http.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	http.HandleFunc("/", homeHandler)
-	http.HandleFunc("/simulate", messageHandler)
-	http.HandleFunc("/clear", clearHandler)
-	http.HandleFunc("/pay", payHandler)
+	http.HandleFunc("/simulate", uc.SimulateHandler)
+	http.HandleFunc("/clear", uc.ClearHandler)
+	http.HandleFunc("/pay", uc.PayHandler)
 
 	log.Println("Server running on http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
@@ -23,18 +33,4 @@ func main() {
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
 	templates.ExecuteTemplate(w, "index.html", nil)
-}
-
-func messageHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(SimulationResultPage))
-}
-
-func clearHandler(w http.ResponseWriter, _ *http.Request) {
-	// Send empty string to remove the div
-	w.Write([]byte(""))
-}
-
-func payHandler(w http.ResponseWriter, _ *http.Request) {
-	// Send empty string to remove the div
-	w.Write([]byte(NewRowSimulationTable))
 }

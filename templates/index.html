@@ -1,84 +1,106 @@
 <!DOCTYPE html>
 <html lang="en">
 
-<head>
-	<meta charset="UTF-8">
-	<title>HTMX + Go</title>
-	<script src="https://unpkg.com/htmx.org@1.9.10"></script>
-	<link rel="stylesheet" href="/static/main.css">
-	<style>
-		{
-			box-sizing: border-box;
-		}
+	<head>
+		<meta charset="UTF-8">
+		<title>HTMX + Go</title>
+		<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+		<link rel="stylesheet" href="/static/main.css">
+		<style>
+			{
+				box-sizing: border-box;
+			}
 
-		/* Set additional styling options for the columns*/
-		.column {
-			float: left;
-			width: 50%;
-		}
+			/* Set additional styling options for the columns*/
+			.column {
+				float: left;
+				width: 50%;
+			}
 
-		.row:after {
-			content: "";
-			display: table;
-			clear: both;
-		}
-	</style>
-</head>
+			.row:after {
+				content: "";
+				display: table;
+				clear: both;
+			}
+		</style>
+		<script>
+			function clearForm() {
+				const form = document.getElementById('billing-form');
+				form.reset();
+				form.querySelector('button[type=submit]').disabled = false;
+				document.getElementById('result').innerHTML = ''; // Optional: clear result box
+			}
+		</script>
+		<script>
+			document.addEventListener('DOMContentLoaded', function () {
+				document.body.addEventListener('htmx:configRequest', function (event) {
+					const elt = event.detail.elt;
 
-<body>
-	<h1>Mock Billing Engine - Yuddis</h1>
-	<form id="billing-form" hx-post="/simulate" hx-target="#response" class="form-table">
+					// Only act if the form being submitted is #billing-form
+					if (elt.tagName === 'FORM' && elt.id === 'billing-form') {
+						const btn = elt.querySelector('button[type=submit]');
+						if (btn) 
+							btn.disabled = true;
+						
+					}
+				});
+			});
+		</script>
+	</head>
+
+	<body>
+		<h1>Mock Billing Engine - Yuddis</h1>
+		<form id="billing-form" hx-post="/simulate" hx-target="#response" class="form-table" hx-on:error="document.getElementById('error').innerHTML = event.detail.xhr.responseText">
+			<table>
+				<tr>
+					<td>
+						<label for="loan">Loan Amount</label>
+					</td>
+					<td colspan="2"><input type="number" id="loan" name="loan" required style="width:97%;" value="5000000">
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<label for="tenor">Tenor</label>
+					</td>
+					<td><input type="number" id="tenor" name="tenor" required style="width:95%;" value="50"></td>
+					<td>
+						<select name="period" hx-get="/models" hx-target="#models" hx-indicator=".htmx-indicator" style="width:100%;">
+							<option value="dayly">Daily</option>
+							<option value="weekly" selected="selected">Weekly</option>
+							<option value="monthly">Monthly</option>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<label for="interest">Interest</label>
+					</td>
+					<td colspan="2"><input type="number" id="interest" name="interest" required style="width:97%;" value="10"></td>
+				</tr>
+				<tr>
+					<td colspan="2">
+						<button type="submit">Submit</button>
+					</td>
+
+				</tr>
+			</table>
+		</form>
+
+		<div id="error" style="color: red;"></div>
+
 		<table>
 			<tr>
 				<td>
-					<label for="loan">Loan Amount</label>
-				</td>
-				<td colspan="2"><input type="number" id="loan" name="loan" required style="width:97%;" value="5000000">
+					<button type="submit" hx-post="/clear" onclick="clearForm()" hx-target="#response">Clear</button>
 				</td>
 			</tr>
-			<tr>
-				<td>
-					<label for="tenor">Tenor</label>
-				</td>
-				<td><input type="number" id="tenor" name="tenor" required style="width:95%;" value="50"></td>
-				<td>
-					<select name="period" hx-get="/models" hx-target="#models" hx-indicator=".htmx-indicator"
-						style="width:100%;">
-						<option value="dayly">Daily</option>
-						<option value="weekly" selected="selected">Weekly</option>
-						<option value="monthly">Monthly</option>
-					</select>
-				</td>
-			</tr>
-			<tr>
-				<td>
-					<label for="interest">Interest</label>
-				</td>
-				<td colspan="2"><input type="number" id="interest" name="interest" required style="width:97%;"
-						value="10"></td>
-			</tr>
-			<tr>
-				<td colspan="3">
-					<button type="submit">Submit</button>
-				</td>
-			</tr>
+
 		</table>
-	</form>
-	<table>
-		<tr>
-			<td>
-				<button type="submit" hx-post="/clear" hx-target="#response">Clear</button>
-			</td>
-		</tr>
 
-	</table>
+		<div style="height: 100px;"></div>
 
-	<div style="height: 100px;"></div>
-
-	<div id="response">
-		
-
-	</div>
-</body>
+		<div id="response"></div>
+	</body>
 
 </html>
