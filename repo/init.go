@@ -24,11 +24,15 @@ const (
     create_time DATETIME NOT NULL,
     FOREIGN KEY (billing_id) REFERENCES master_billing(id)
 );
-
 	`
 )
 
-func Init() {
+type Client struct {
+	db           *sql.DB
+	mapStatement map[int]*sql.Stmt
+}
+
+func Init() Client {
 	// Connect to or create SQLite DB file
 	db, err := sql.Open("sqlite3", "./billing.db")
 	if err != nil {
@@ -37,13 +41,42 @@ func Init() {
 	defer db.Close()
 
 	// Create table
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        email TEXT NOT NULL UNIQUE
-    )`)
+	_, err = db.Exec(createTableBilling)
+	if err != nil {
+		panic(err)
+	}
+	_, err = db.Exec(createTableHistoryBilling)
 	if err != nil {
 		panic(err)
 	}
 
+	stmtMstBilling, err := db.Prepare(`
+  INSERT INTO master_billing (
+    loan_amount, tenor, tenor_period,
+    interest_percentage, interest_amount,
+    is_delinquent, outstanding_amount,
+    last_payment_idx, current_payment_idx, create_time
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`)
+	if err != nil {
+		panic(err)
+	}
+
+	stmtHstBilling, err := db.Prepare(`
+  INSERT INTO history_billing (
+    billing_id, payment_idx, create_time
+)
+VALUES (?, ?, ?)`)
+	if err != nil {
+		panic(err)
+	}
+
+	client := &Client{
+		db: db,
+	}
+
+	client.mapStatement[stmtInsertMasterBilling] = stmtMstBilling
+	client.mapStatement[stmtInsertHstBilling] = stmtHstBilling
+
+	return *client
 }
