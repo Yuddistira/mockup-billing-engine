@@ -3,6 +3,7 @@ package usecase
 import (
 	"database/sql"
 	"fmt"
+	"html/template"
 	"net/http"
 	"strconv"
 	"time"
@@ -55,5 +56,43 @@ func (u *Usecase) SimulateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte(SimulationResultPage))
+	scheduleBills := u.buildScheduleBilling(param, []repo.TableHistoryBilling{})
+
+	templateData := SimulateBillingResp{
+		Billings:          scheduleBills,
+		Status:            "Normal",
+		OutstandingAmount: param.OutstandingAmount,
+		Interest:          param.InterestAmount,
+	}
+
+	t := template.Must(template.New("rows").Parse(SimulationResultPage))
+	w.Header().Set("Content-Type", "text/html")
+	t.Execute(w, templateData)
+}
+
+func (u *Usecase) buildScheduleBilling(billingData repo.TableMasterBilling, billingHistories []repo.TableHistoryBilling) []ScheduleBilling {
+	var tempScheduleBills []ScheduleBilling
+
+	// Append paid billing to scheduled list data
+	for _, v := range billingHistories {
+		tempScheduleBills = append(tempScheduleBills, ScheduleBilling{
+			PaymentIdx: fmt.Sprintf("%s %d", billingData.TenorPeriod, v.PaymentIdx),
+			Amount:     fmt.Sprintf("Rp. %d", billingData.InterestAmount),
+			PayStatus:  "Paid",
+		})
+	}
+
+	// Append unpaid billing to scheduled list data
+	idx := len(tempScheduleBills) + 1
+
+	for idx <= billingData.Tenor {
+		tempScheduleBills = append(tempScheduleBills, ScheduleBilling{
+			PaymentIdx: fmt.Sprintf("%s %d", billingData.TenorPeriod, idx),
+			Amount:     "",
+			PayStatus:  "",
+		})
+
+		idx++
+	}
+	return tempScheduleBills
 }

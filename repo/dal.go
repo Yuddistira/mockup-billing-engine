@@ -13,6 +13,12 @@ const (
     billing_id, payment_idx, create_time
 )
 VALUES (?, ?, ?)`
+
+	queryUpdateHstBilling = `
+	INSERT INTO history_billing (
+	billing_id, payment_idx, create_time
+	)
+	VALUES (?, ?, ?)`
 )
 
 func (c *Client) InsertMasterBilling(param TableMasterBilling) error {

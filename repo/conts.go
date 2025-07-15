@@ -16,6 +16,10 @@ type TableMasterBilling struct {
 	UpdateTime         sql.NullTime
 }
 
+func (tb *TableMasterBilling) GetOutstanding() int {
+	return tb.OutstandingAmount
+}
+
 type TableHistoryBilling struct {
 	Id         int
 	BillingID  int
