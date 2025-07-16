@@ -3,6 +3,7 @@ package repo
 import (
 	"database/sql"
 
+	"github.com/jmoiron/sqlx"
 	_ "modernc.org/sqlite"
 )
 
@@ -18,13 +19,15 @@ const (
     outstanding_amount INTEGER,
     last_payment_idx INTEGER DEFAULT 0,
     current_payment_idx INTEGER DEFAULT 0,
-    create_time DATETIME NOT NULL
+    create_time DATETIME NOT NULL,
+    update_time DATETIME
 );
 `
 	createTableHistoryBilling = `CREATE TABLE IF NOT EXISTS history_billing (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     billing_id INTEGER NOT NULL,
     payment_idx INTEGER NOT NULL,
+    amount INTEGER NOT NULL,
     create_time DATETIME NOT NULL,
     FOREIGN KEY (billing_id) REFERENCES master_billing(id)
 );
@@ -32,12 +35,16 @@ const (
 )
 
 type Client struct {
-	db *sql.DB
+	db *sqlx.DB
+}
+
+func (c *Client) BeginTx() (*sql.Tx, error) {
+	return c.db.Begin()
 }
 
 func Init() *Client {
 	// Connect to or create SQLite DB file
-	db, err := sql.Open("sqlite", "./billing.db")
+	db, err := sqlx.Open("sqlite", "./billing.db")
 	if err != nil {
 		panic(err)
 	}

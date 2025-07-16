@@ -25,7 +25,8 @@ func main() {
 	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/simulate", uc.SimulateHandler)
 	http.HandleFunc("/clear", uc.ClearHandler)
-	http.HandleFunc("/pay", uc.PayHandler)
+	http.HandleFunc("/pay", uc.MakePayment)
+	http.HandleFunc("/skip", uc.SkipHandler)
 
 	log.Println("Server running on http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))

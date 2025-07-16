@@ -8,7 +8,15 @@ type ScheduleBilling struct {
 
 type SimulateBillingResp struct {
 	Billings          []ScheduleBilling
+	BillSchedule      string
+	BillingID         int
 	Status            string
 	OutstandingAmount int
 	Interest          int
+	Finish            string
+}
+
+type PaymentRequest struct {
+	BillingID int
+	Amount    int
 }

@@ -47,7 +47,7 @@ func (u *Usecase) SimulateHandler(w http.ResponseWriter, r *http.Request) {
 	param.OutstandingAmount = int(((float32(param.LoanAmount) / 100) * float32(param.InterestPercentage)) + float32(param.LoanAmount))
 	param.InterestAmount = param.OutstandingAmount / param.Tenor
 
-	err = u.Repo.InsertMasterBilling(param)
+	billingId, err := u.Repo.InsertMasterBilling(param)
 	if err != nil {
 		// http.Error(w, fmt.Sprintf("Failed Store data billing - %s", err.Error()), http.StatusInternalServerError)
 
@@ -60,6 +60,8 @@ func (u *Usecase) SimulateHandler(w http.ResponseWriter, r *http.Request) {
 
 	templateData := SimulateBillingResp{
 		Billings:          scheduleBills,
+		BillSchedule:      fmt.Sprintf("%s %d", param.TenorPeriod, param.CurrentPaymentIdx),
+		BillingID:         int(billingId),
 		Status:            "Normal",
 		OutstandingAmount: param.OutstandingAmount,
 		Interest:          param.InterestAmount,
@@ -74,23 +76,36 @@ func (u *Usecase) buildScheduleBilling(billingData repo.TableMasterBilling, bill
 	var tempScheduleBills []ScheduleBilling
 
 	// Append paid billing to scheduled list data
-	for _, v := range billingHistories {
-		tempScheduleBills = append(tempScheduleBills, ScheduleBilling{
+	for i, v := range billingHistories {
+		sb := ScheduleBilling{
 			PaymentIdx: fmt.Sprintf("%s %d", billingData.TenorPeriod, v.PaymentIdx),
-			Amount:     fmt.Sprintf("Rp. %d", billingData.InterestAmount),
-			PayStatus:  "Paid",
-		})
+			Amount:     fmt.Sprintf("Rp. %d", v.Amount),
+		}
+
+		if i > billingData.LastPaymentIdx && i < billingData.CurrentPaymentIdx {
+			sb.PayStatus = "Skip"
+		} else {
+			sb.PayStatus = "Paid"
+		}
+
+		tempScheduleBills = append(tempScheduleBills, sb)
 	}
 
 	// Append unpaid billing to scheduled list data
 	idx := len(tempScheduleBills) + 1
 
 	for idx <= billingData.Tenor {
-		tempScheduleBills = append(tempScheduleBills, ScheduleBilling{
+		sb := ScheduleBilling{
 			PaymentIdx: fmt.Sprintf("%s %d", billingData.TenorPeriod, idx),
 			Amount:     "",
 			PayStatus:  "",
-		})
+		}
+
+		if idx > billingData.LastPaymentIdx && idx < billingData.CurrentPaymentIdx {
+			sb.PayStatus = "Skip"
+		}
+
+		tempScheduleBills = append(tempScheduleBills, sb)
 
 		idx++
 	}

@@ -25,7 +25,7 @@ const SimulationResultPage string = `
 					</table>
 				</div>
 				<div class="column">
-					<h2>Borrower</h2>
+					<h2>Borrower</h2><h2> {{.Finish}}</h2>
 
 
 					<div style="width: 100%;text-align: left;">
@@ -38,10 +38,28 @@ const SimulationResultPage string = `
 					<td id="borrower_outstanding_amount" hx-swap-oob="true">Rp {{.OutstandingAmount}}</td>
 
 
-					<h3 style="text-align: center;">Pay amount: {{.Interest}}</h3>
+					<h3 style="text-align: center;">{{.BillSchedule}} Pay amount: {{.Interest}}</h3>
+					<div id="interest-container" data-interest="{{.Interest}}" data-billingid="{{.BillingID}}"></div>
 					<div style="width: 100%;text-align: center;">
-						<button hx-post="/pay" hx-target="#billing-resp" style="padding: 20px;width: 100px;background-color: aquamarine;">Pay</button>
-						<button style="padding: 20px;width: 100px;text-align: center;background-color: firebrick; color: white;">Skip</button>
+						<button 
+							hx-post="/pay" 
+							hx-target="#response" 
+							hx-vals='js:{
+								"interest": document.getElementById("interest-container").dataset.interest,
+								"billing_id": document.getElementById("interest-container").dataset.billingid
+							}' 
+							style="padding: 20px;width: 100px;background-color: aquamarine;">
+							Pay
+						</button>
+						<button
+							hx-post="/skip" 
+							hx-target="#response" 
+							hx-vals='js:{
+								"billing_id": document.getElementById("interest-container").dataset.billingid
+							}'
+							style="padding: 20px;width: 100px;text-align: center;background-color: firebrick; color: white;">
+							Skip
+						</button>
 					</div>
 
 
